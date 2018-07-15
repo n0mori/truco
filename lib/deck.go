@@ -47,3 +47,24 @@ func Shuffle(d Deck) {
 func (c Card) Print() {
 	fmt.Printf("%d %c\n", c.face, c.suit)
 }
+
+//Value returns the card value
+func (c Card) Value() int {
+	if c.face == 1 && c.suit == SuitSpade {
+		return 12
+	}
+
+	if c.face == 4 && c.suit == SuitClub {
+		return 14
+	}
+
+	if c.face == 7 {
+		if c.suit == SuitDiamond {
+			return 11
+		} else if c.suit == SuitHeart {
+			return 13
+		}
+	}
+
+	return (c.face+6)%10 + 1
+}
