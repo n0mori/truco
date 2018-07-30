@@ -66,6 +66,7 @@ func playHand(control *connectionControl, gameState *truco.GameState) {
 		turn = 1
 	}
 	for gameState.PlayerStates[0].Maos < 3 && gameState.PlayerStates[1].Maos < 3 {
+		sendStates(control, gameState)
 		values := make([]int, 2)
 
 		play, err := control.readers[turn].ReadString('\n')
@@ -76,10 +77,16 @@ func playHand(control *connectionControl, gameState *truco.GameState) {
 		ind, _ := strconv.Atoi(play)
 
 		values[turn] = gameState.PlayerStates[turn].Cards[ind].Value()
+		gameState.TableCards[turn] = gameState.PlayerStates[turn].Cards[ind]
 		gameState.PlayerStates[turn].Cards = append(gameState.PlayerStates[turn].Cards[:ind], gameState.PlayerStates[turn].Cards[ind+1:]...)
+		gameState.PlayerStates[turn].Active = false
 
 		turn = turn + 1
 		turn = turn % 2
+
+		gameState.PlayerStates[turn].Active = true
+
+		sendStates(control, gameState)
 
 		play, err = control.readers[turn].ReadString('\n')
 		if err == io.EOF {
@@ -89,6 +96,7 @@ func playHand(control *connectionControl, gameState *truco.GameState) {
 		ind, _ = strconv.Atoi(play)
 
 		values[turn] = gameState.PlayerStates[turn].Cards[ind].Value()
+		gameState.TableCards[turn] = gameState.PlayerStates[turn].Cards[ind]
 		gameState.PlayerStates[turn].Cards = append(gameState.PlayerStates[turn].Cards[:ind], gameState.PlayerStates[turn].Cards[ind+1:]...)
 
 		if values[0] == values[1] {
@@ -96,12 +104,15 @@ func playHand(control *connectionControl, gameState *truco.GameState) {
 			gameState.PlayerStates[1].Maos++
 		} else if values[0] > values[1] {
 			gameState.PlayerStates[0].Maos++
+			gameState.PlayerStates[0].Active = true
+			gameState.PlayerStates[1].Active = false
 		} else {
 			gameState.PlayerStates[1].Maos++
+			gameState.PlayerStates[0].Active = false
+			gameState.PlayerStates[1].Active = true
 		}
 
-		sendStates(control, gameState)
-
+		gameState.TableCards = make(truco.Deck, 2)
 	}
 
 	if gameState.PlayerStates[0].Maos > gameState.PlayerStates[1].Maos {
@@ -113,6 +124,8 @@ func playHand(control *connectionControl, gameState *truco.GameState) {
 	gameState.PlayerStates[0].Maos = 0
 	gameState.PlayerStates[1].Maos = 0
 	gameState.Round++
+
+	truco.Deal(&gameState.PlayerStates[0], &gameState.PlayerStates[1])
 }
 
 func closeConnections(control *connectionControl) {
