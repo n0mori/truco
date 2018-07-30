@@ -16,6 +16,7 @@ func DrawTable() {
 }
 
 //Draw draws a card in the position x, y. If visible is false, draws the cardback
+/*
 func (c Card) Draw(x, y int, visible bool) {
 	str := " A234567JQK"
 	faces := []rune(str)
@@ -27,13 +28,13 @@ func (c Card) Draw(x, y int, visible bool) {
 		}
 
 		var color termbox.Attribute
-		if c.suit == SuitSpade || c.suit == SuitClub {
+		if c.Suit == SuitSpade || c.Suit == SuitClub {
 			color = termbox.ColorBlack
 		} else {
 			color = termbox.ColorRed
 		}
-		termbox.SetCell(x, y, faces[c.face], color, termbox.ColorWhite)
-		termbox.SetCell(x, y+1, c.suit, color, termbox.ColorWhite)
+		termbox.SetCell(x, y, faces[c.Face], color, termbox.ColorWhite)
+		termbox.SetCell(x, y+1, c.Suit, color, termbox.ColorWhite)
 	} else {
 		for i := x; i < x+CardWidth; i++ {
 			for j := y; j < y+CardHeight; j++ {
@@ -42,3 +43,4 @@ func (c Card) Draw(x, y int, visible bool) {
 		}
 	}
 }
+*/

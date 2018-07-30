@@ -4,8 +4,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"os"
+	"strconv"
 
 	"github.com/n0mori/truco/lib"
 )
@@ -40,11 +43,84 @@ func waitForPlayers(server *net.TCPListener) connectionControl {
 	return connectionControl{conns: conns, readers: readers}
 }
 
-func play(control connectionControl, gameState truco.GameState) {
+func play(control *connectionControl, gameState *truco.GameState) {
+
+	for gameState.PlayerStates[0].Tentos < 12 && gameState.PlayerStates[1].Tentos < 12 {
+		playHand(control, gameState)
+	}
+
 	sendStates(control, gameState)
+
+	closeConnections(control)
 }
 
-func sendStates(control connectionControl, gameState truco.GameState) {
+func playHand(control *connectionControl, gameState *truco.GameState) {
+	var turn int
+	if gameState.Round%2 == 0 {
+		gameState.PlayerStates[0].Active = true
+		gameState.PlayerStates[1].Active = false
+		turn = 0
+	} else {
+		gameState.PlayerStates[0].Active = false
+		gameState.PlayerStates[1].Active = true
+		turn = 1
+	}
+	for gameState.PlayerStates[0].Maos < 3 && gameState.PlayerStates[1].Maos < 3 {
+		values := make([]int, 2)
+
+		play, err := control.readers[turn].ReadString('\n')
+		if err == io.EOF {
+			os.Exit(1)
+		}
+
+		ind, _ := strconv.Atoi(play)
+
+		values[turn] = gameState.PlayerStates[turn].Cards[ind].Value()
+		gameState.PlayerStates[turn].Cards = append(gameState.PlayerStates[turn].Cards[:ind], gameState.PlayerStates[turn].Cards[ind+1:]...)
+
+		turn = turn + 1
+		turn = turn % 2
+
+		play, err = control.readers[turn].ReadString('\n')
+		if err == io.EOF {
+			os.Exit(1)
+		}
+
+		ind, _ = strconv.Atoi(play)
+
+		values[turn] = gameState.PlayerStates[turn].Cards[ind].Value()
+		gameState.PlayerStates[turn].Cards = append(gameState.PlayerStates[turn].Cards[:ind], gameState.PlayerStates[turn].Cards[ind+1:]...)
+
+		if values[0] == values[1] {
+			gameState.PlayerStates[0].Maos++
+			gameState.PlayerStates[1].Maos++
+		} else if values[0] > values[1] {
+			gameState.PlayerStates[0].Maos++
+		} else {
+			gameState.PlayerStates[1].Maos++
+		}
+
+		sendStates(control, gameState)
+
+	}
+
+	if gameState.PlayerStates[0].Maos > gameState.PlayerStates[1].Maos {
+		gameState.PlayerStates[0].Tentos++
+	} else if gameState.PlayerStates[0].Maos < gameState.PlayerStates[1].Maos {
+		gameState.PlayerStates[1].Tentos++
+	}
+
+	gameState.PlayerStates[0].Maos = 0
+	gameState.PlayerStates[1].Maos = 0
+	gameState.Round++
+}
+
+func closeConnections(control *connectionControl) {
+	control.conns[0].Close()
+	control.conns[1].Close()
+}
+
+func sendStates(control *connectionControl, gameState *truco.GameState) {
 	for _, conn := range control.conns {
 		js, err := json.Marshal(gameState)
 
@@ -75,5 +151,5 @@ func main() {
 
 	gameState := truco.StartGame()
 
-	play(control, gameState)
+	play(&control, &gameState)
 }

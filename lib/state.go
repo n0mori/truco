@@ -27,11 +27,12 @@ func NewPlayerState(id int) PlayerState {
 }
 
 //Deal the cards to the you and enemy players
-func Deal(gs *GameState) {
+func Deal(you, enemy *PlayerState) {
 	deck := NewDeck()
-	gs.PlayerStates[0].Cards = deck[:5]
-	gs.PlayerStates[1].Cards = deck[6:10]
-	print(len(gs.PlayerStates[1].Cards), len(gs.PlayerStates[1].Cards))
+	Shuffle(deck)
+	you.Cards = deck[:5]
+	enemy.Cards = deck[6:11]
+	print(len(you.Cards), len(enemy.Cards))
 }
 
 //StartGame sets the initial state of the game.
@@ -39,11 +40,11 @@ func StartGame() GameState {
 	you, enemy := NewPlayerState(0), NewPlayerState(1)
 	you.Active = true
 	enemy.Active = false
+	Deal(&you, &enemy)
 	gs := GameState{
 		PlayerStates: []PlayerState{you, enemy},
 		TableCards:   make(Deck, 2),
 		Round:        0}
-	Deal(&gs)
 
 	return gs
 
