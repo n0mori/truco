@@ -7,7 +7,7 @@ import (
 	"log"
 	"net"
 
-	truco "github.com/n0mori/truco/lib"
+	"github.com/n0mori/truco/lib"
 )
 
 type connectionControl struct {
@@ -40,6 +40,24 @@ func waitForPlayers(server *net.TCPListener) connectionControl {
 	return connectionControl{conns: conns, readers: readers}
 }
 
+func play(control connectionControl, gameState truco.GameState) {
+	sendStates(control, gameState)
+}
+
+func sendStates(control connectionControl, gameState truco.GameState) {
+	for _, conn := range control.conns {
+		js, err := json.Marshal(gameState)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Fprintln(conn, string(js))
+		fmt.Println(string(js))
+	}
+
+}
+
 func main() {
 	tcp, err := net.ResolveTCPAddr("tcp", ":2000")
 
@@ -57,13 +75,5 @@ func main() {
 
 	gameState := truco.StartGame()
 
-	for _, conn := range control.conns {
-		js, err := json.Marshal(gameState)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Fprintln(conn, string(js))
-	}
+	play(control, gameState)
 }
