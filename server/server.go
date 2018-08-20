@@ -10,7 +10,7 @@ import (
 	"os"
 	"strconv"
 
-	"truco/lib"
+	"github.com/n0mori/truco/lib"
 )
 
 type connectionControl struct {
