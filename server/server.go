@@ -10,7 +10,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/n0mori/truco/lib"
+	"truco/lib"
 )
 
 type connectionControl struct {
@@ -47,11 +47,20 @@ func play(control *connectionControl, gameState *truco.GameState) {
 
 	for gameState.PlayerStates[0].Tentos < 12 && gameState.PlayerStates[1].Tentos < 12 {
 		playHand(control, gameState)
+		println("Foi-se um round")
 	}
 
 	sendStates(control, gameState)
 
 	closeConnections(control)
+}
+
+func sendFalse(control *connectionControl, gameState *truco.GameState) {
+	println("falses")
+	gameState.PlayerStates[0].Active = false
+	gameState.PlayerStates[1].Active = false
+
+	sendStates(control, gameState)
 }
 
 func playHand(control *connectionControl, gameState *truco.GameState) {
@@ -79,6 +88,9 @@ func playHand(control *connectionControl, gameState *truco.GameState) {
 		values[turn] = gameState.PlayerStates[turn].Cards[ind].Value()
 		gameState.TableCards[turn] = gameState.PlayerStates[turn].Cards[ind]
 		gameState.PlayerStates[turn].Cards = append(gameState.PlayerStates[turn].Cards[:ind], gameState.PlayerStates[turn].Cards[ind+1:]...)
+
+		sendFalse(control, gameState)
+
 		gameState.PlayerStates[turn].Active = false
 
 		turn = turn + 1
@@ -99,15 +111,25 @@ func playHand(control *connectionControl, gameState *truco.GameState) {
 		gameState.TableCards[turn] = gameState.PlayerStates[turn].Cards[ind]
 		gameState.PlayerStates[turn].Cards = append(gameState.PlayerStates[turn].Cards[:ind], gameState.PlayerStates[turn].Cards[ind+1:]...)
 
+		sendFalse(control, gameState)
+
 		if values[0] == values[1] {
+			fmt.Println("Empachou")
 			gameState.PlayerStates[0].Maos++
 			gameState.PlayerStates[1].Maos++
+			turn = 0
+			gameState.PlayerStates[0].Active = true
+			gameState.PlayerStates[1].Active = false
 		} else if values[0] > values[1] {
+			fmt.Println("Player 1 win")
+			turn = 0
 			gameState.PlayerStates[0].Maos++
 			gameState.PlayerStates[0].Active = true
 			gameState.PlayerStates[1].Active = false
 		} else {
+			fmt.Println("Player 2 win")
 			gameState.PlayerStates[1].Maos++
+			turn = 1
 			gameState.PlayerStates[0].Active = false
 			gameState.PlayerStates[1].Active = true
 		}
@@ -142,8 +164,9 @@ func sendStates(control *connectionControl, gameState *truco.GameState) {
 		}
 
 		fmt.Fprintln(conn, string(js))
-		fmt.Println(string(js))
+		fmt.Println(conn.RemoteAddr(), string(js))
 	}
+	fmt.Println()
 
 }
 
